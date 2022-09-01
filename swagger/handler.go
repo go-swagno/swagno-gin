@@ -1,9 +1,11 @@
 package swagger
 
 import (
-	"github.com/gin-contrib/static"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	swaggerUi "github.com/go-swagno/swagno-files"
+	"golang.org/x/net/webdav"
 )
 
 type Config struct {
@@ -12,21 +14,34 @@ type Config struct {
 
 var swaggerDoc string
 
+var handler *webdav.Handler
+
 var defaultConfig = Config{
 	Prefix: "/swagger",
 }
 
-func SwaggerHandler(a *gin.Engine, doc []byte, config ...Config) {
+func SwaggerHandler(doc []byte, config ...Config) gin.HandlerFunc {
 	if len(config) != 0 {
 		defaultConfig = config[0]
 	}
 	if swaggerDoc == "" {
 		swaggerDoc = string(doc)
 	}
+	if handler == nil {
+		handler = swaggerUi.Handler
+	}
 
-	a.GET(defaultConfig.Prefix+"/doc.json", func(c *gin.Context) {
-		c.String(200, swaggerDoc)
-	})
+	return func(ctx *gin.Context) {
+		prefix := defaultConfig.Prefix
+		handler.Prefix = prefix
 
-	a.Use(static.Serve(defaultConfig.Prefix, static.LocalFile("./swaggerFiles", true)))
+		switch ctx.Request.RequestURI {
+		case prefix + "/":
+			ctx.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+		case prefix + "/doc.json":
+			ctx.String(http.StatusOK, swaggerDoc)
+		default:
+			handler.ServeHTTP(ctx.Writer, ctx.Request)
+		}
+	}
 }
