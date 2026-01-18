@@ -37,7 +37,7 @@ func SwaggerHandler(doc []byte, config ...Config) gin.HandlerFunc {
 
 		switch ctx.Request.RequestURI {
 		case prefix + "/":
-			ctx.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+			ctx.Redirect(http.StatusMovedPermanently, prefix+"/index.html")
 		case prefix + "/doc.json":
 			ctx.String(http.StatusOK, swaggerDoc)
 		default:
